@@ -1,7 +1,10 @@
 import json
+from urllib import response
 
 from django.urls import reverse
 import pytest
+
+from tests.conftest import student_1
 
 
 @pytest.mark.django_db()
@@ -75,7 +78,8 @@ def test_submit_assignment_without_teacher_student_1(api_client, student_1):
     assert response.status_code == 400
     error = response.json()
 
-    assert error['non_field_errors'] == ['Teacher ID has to be sent to set state to SUBMITTED']
+    assert error['non_field_errors'] == [
+        'Teacher ID has to be sent to set state to SUBMITTED']
 
 
 @pytest.mark.django_db()
@@ -101,3 +105,39 @@ def test_submit_assignment_student_1(api_client, student_1):
     assert assignment['teacher'] == 1
     assert assignment['grade'] is None
     assert assignment['id'] is not None
+
+
+@pytest.mark.django_db()
+def test_submit_assignment_content_not_present(api_client, student_1):
+    response = api_client.post(
+        reverse('students-assignments'),
+        data=json.dumps({}),
+        HTTP_X_Principal=student_1,
+        content_type='application/json'
+    )
+
+    assert response.status_code == 400
+
+    error = response.json()
+
+    assert 'This field is required.' == error['content'][0]
+
+
+@pytest.mark.django_db()
+def test_change_assignment_not_present(api_client, student_1):
+    response = api_client.patch(
+        reverse('students-assignments'),
+        data=json.dumps({
+            'id': 255,
+            'state': 'SUBMITTED',
+            'teacher_id': 1
+        }),
+        HTTP_X_Principal=student_1,
+        content_type='application/json'
+    )
+
+    assert response.status_code == 400
+
+    errors = response.json()
+
+    assert errors['error'] == 'Assignment does not exist/permission denied'

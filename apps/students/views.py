@@ -20,6 +20,7 @@ class AssignmentsView(generics.ListCreateAPIView):
 
     def post(self, request, *args, **kwargs):
         student = Student.objects.get(user=request.user)
+
         request.data['student'] = student.id
 
         serializer = self.serializer_class(data=request.data)
@@ -46,14 +47,16 @@ class AssignmentsView(generics.ListCreateAPIView):
             request.data['teacher'] = teacher.id
 
         try:
-            assignment = Assignment.objects.get(pk=request.data['id'], student__user=request.user)
+            assignment = Assignment.objects.get(
+                pk=request.data['id'], student__user=request.user)
         except Assignment.DoesNotExist:
             return Response(
                 data={'error': 'Assignment does not exist/permission denied'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = self.serializer_class(assignment, data=request.data, partial=True)
+        serializer = self.serializer_class(
+            assignment, data=request.data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
